@@ -1,4 +1,7 @@
 # credit-card-fraud-detection
+[![Build Status](https://travis-ci.com/brownc1995/credit-card-fraud-detection.svg?branch=master)](https://travis-ci.com/brownc1995/credit-card-fraud-detection)
+[![codecov](https://codecov.io/gh/brownc1995/credit-card-fraud-detection/branch/master/graph/badge.svg)](https://codecov.io/gh/brownc1995/credit-card-fraud-detection)
+
 A range of models used for detecting fraudulent credit card 
 transactions.
 
