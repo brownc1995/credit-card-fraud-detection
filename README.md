@@ -57,5 +57,3 @@ tensorboard --logdir doc/logs
 ## To Do
 Still to do:
 - Add experiments for user to run
-- create `.travis.yml`
-- add funky badges to `README.md`
