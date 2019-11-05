@@ -144,6 +144,8 @@ def log_model_performance(
     """
     cm = confusion_matrix(labels, predictions > 0.5)
 
+    logging.info('==================================================================')
+
     for name, value in zip(model.metrics_names, results):
         logging.info(f'{name}: {value}')
 
@@ -152,6 +154,8 @@ def log_model_performance(
     logging.info(f'Fraudulent Transactions Missed (False Negatives): {cm[1][0]}')
     logging.info(f'Fraudulent Transactions Detected (True Positives): {cm[1][1]}')
     logging.info(f'Total Fraudulent Transactions: {np.sum(cm[1])}')
+
+    logging.info('==================================================================')
 
     return None
 
