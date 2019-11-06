@@ -3,7 +3,7 @@ import argparse
 from ccfd.data import *
 from ccfd.model import *
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -40,15 +40,17 @@ def main(
         test_target
     )
 
+    logging.info('Setting up neural network')
+    initial_bias = calc_initial_bias(ccfd_data)
+    input_shape = train_data.shape[-1]
+
     #############################################
     #
     # vanilla network
     #
     #############################################
 
-    logging.info('Setting up neural network')
-    initial_bias = calc_initial_bias(ccfd_data)
-    input_shape = train_data.shape[-1]
+    logging.info('Creating vanilla model')
     model = build_model(
         input_shape=input_shape,
         output_bias=initial_bias
@@ -137,6 +139,7 @@ def main(
     test_predictions_rs = model_rs.predict(test_dataset)
     log_model_performance(model_rs, rs_results, test_target, test_predictions_rs)
 
+    logging.info('Experiments ran successfully')
     logging.info('Exiting')
 
     return None

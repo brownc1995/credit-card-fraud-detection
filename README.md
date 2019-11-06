@@ -17,10 +17,27 @@ pip install -r requirements.txt
 ## Experiments
 You can run the following line to start some useful experiments:
 ```shell script
-python ccfd.py --epochs=25
+python run.py --epochs=25
 ```
-where you can view the fitting history in [logs](doc/logs). The logs
-can be displayed nicely using TensorBoard.
+You can view the fitting history in [logs](doc/logs) and display them 
+using TensorBoard. `run.py` will run the 
+- vanilla;
+- class-weighted, and;
+- oversampled
+
+neural network experiments and save the history in [logs](doc/logs). 
+
+The class-weighted neural network maps 
+class indices (integers) to a weight (float) value, used for 
+weighting the loss function (during training only). This can be 
+useful to tell the model to "pay more attention" to samples from 
+an under-represented class (such as the fraudulent transactions in
+our data).
+
+One can also oversample from the positive class such that we train
+on data that has an equal distribution of positive and negative
+examples. The network is then able to learn better how to distinguish
+positive from negative examples.
 
 
 ## TensorBoard
