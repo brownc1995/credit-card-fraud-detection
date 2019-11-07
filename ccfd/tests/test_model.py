@@ -4,7 +4,7 @@ from ccfd.model import *
 
 
 class TestData(unittest.TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         self.data = pd.DataFrame({
             'class': [0, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1],
         })

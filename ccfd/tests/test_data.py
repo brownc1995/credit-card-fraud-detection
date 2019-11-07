@@ -4,12 +4,12 @@ from ccfd.data import *
 
 
 class TestData(unittest.TestCase):
-    def setUp(self) -> None:
-        self.data = get_data(load_original=False)
+    def setUp(self):
+        self.data = get_data()
         self.train_data, self.train_target, self.val_data, _, self.test_data, _ = train_val_test_split(self.data)
         self.train_scaled, *_ = scale_data(self.train_data, self.val_data, self.test_data)
 
-    def test_get_data(self) -> None:
+    def test_get_data(self):
         self.assertIsInstance(self.data, pd.DataFrame)
         self.assertTrue(hasattr(self.data, CLASS))
         self.assertTrue(hasattr(self.data, AMOUNT))
