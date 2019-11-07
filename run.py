@@ -140,6 +140,7 @@ def main(
     log_model_performance(model_rs, rs_results, test_target, test_predictions_rs)
 
     logging.info('Experiments ran successfully')
+
     logging.info('Exiting')
 
     return None
@@ -153,9 +154,11 @@ def _arg_parser() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Main entry point for CCFD model')
 
     parser.add_argument(
+        '-e',
         '--epochs',
         type=int,
-        help='number of epochs to train model over'
+        help='number of epochs to train models over',
+        required=True
     )
 
     return parser.parse_args()
