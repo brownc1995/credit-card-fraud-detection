@@ -23,8 +23,6 @@ METRICS = [
     tf.keras.metrics.AUC(name='auc'),
 ]
 
-BUFFER_SIZE = 100000
-
 
 def _calc_class_sizes(
         df: pd.DataFrame

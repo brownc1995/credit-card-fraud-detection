@@ -5,6 +5,7 @@ Credit card fraud detection library
 __all__ = (
     'AMOUNT',
     'BATCH_SIZE',
+    'BUFFER_SIZE',
     'CCFD_DATA_PATH',
     'CLASS',
     'FIGSIZE',
@@ -17,6 +18,8 @@ __all__ = (
 AMOUNT = 'amount'
 
 BATCH_SIZE = 2048
+
+BUFFER_SIZE = 100000
 
 CCFD_DATA_PATH = 'doc/data/creditcard'
 
