@@ -16,12 +16,12 @@ pip install -r requirements.txt
 
 
 ## Experiments
-You can run the following line to start some useful experiments:
+You can run the following line to start some experiments:
 ```shell script
-python run.py --epochs=25
+python -m ccfd --epochs=25
 ```
 You can view the fitting history in [logs](doc/logs) and display them 
-using TensorBoard. `run.py` will run the 
+using TensorBoard. The above will run the 
 - vanilla;
 - class-weighted, and;
 - oversampled
@@ -39,6 +39,13 @@ One can also oversample from the positive class such that we train
 on data that has an equal distribution of positive and negative
 examples. The network is then able to learn better how to distinguish
 positive from negative examples.
+
+
+## Testing
+You can run tests for the repository using
+```shell script
+pytest --cov=.
+```
 
 
 ## TensorBoard
@@ -86,3 +93,15 @@ recommends measuring the
 accuracy using the Area Under the Precision-Recall Curve (AUPRC). 
 Confusion matrix accuracy is not meaningful for unbalanced 
 classification.
+
+
+## Further work
+The following are areas for further investigation:
+- simple anomaly detection model
+- random forest classifier
+- try and use `tf.data.Dataset` everywhere and never `pd.DataFrame` 
+
+
+## References
+- [Classification on imbalanced data; TensorFlow](https://www.tensorflow.org/tutorials/structured_data/imbalanced_data)
+- [Credit Card Fraud Detection; Kaggle](https://www.kaggle.com/mlg-ulb/creditcardfraud)

@@ -6,9 +6,11 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from ccfd import *
+from ccfd import CLASS
 
 logger = logging.getLogger(__name__)
+
+CCFD_DATA_PATH = 'doc/data/creditcard'
 
 
 def get_data(
@@ -20,6 +22,7 @@ def get_data(
     :param load_original: bool, load from csv?
     :return: pd.DataFrame, transaction data
     """
+    logger.info('Grabbing data')
     if load_original:
         data = pd.read_csv(f'{CCFD_DATA_PATH}.csv')
         data.columns = [c.lower() for c in data.columns]
@@ -27,8 +30,8 @@ def get_data(
     else:
         data = pd.read_pickle(f'{CCFD_DATA_PATH}.pkl')  # pkl file is result of above formatting of csv
 
-    logging.info(f'We have {len(data)} records of which {data["class"].sum()} were fraudulent.')
-    logging.info(f'{data["class"].sum() / len(data) * 100:.3f}% of records are fraudulent.')
+    logger.info(f'We have {len(data)} records of which {data["class"].sum()} were fraudulent.')
+    logger.info(f'{data["class"].sum() / len(data) * 100:.3f}% of records are fraudulent.')
 
     return data
 
@@ -58,6 +61,8 @@ def train_val_test_split(
     :param test_size: float, proportion of training set set aside for test and val data.
     :return: Tuple, train, test and val features and targets
     """
+    logger.info('Splitting data into training, validation, and test sets')
+
     train_df, test_df = train_test_split(df, test_size=test_size)
     train_df, val_df = train_test_split(train_df, test_size=test_size)
 
@@ -86,12 +91,12 @@ def log_shapes(
     :param test_target: pd.DataFrame, self-explanatory
     :return: None
     """
-    logging.info(f'Training data shape: {train_data.shape}')
-    logging.info(f'Validation data shape: {val_data.shape}')
-    logging.info(f'Test data shape: {test_data.shape}')
-    logging.info(f'Training labels shape: {train_target.shape}')
-    logging.info(f'Validation labels shape: {val_target.shape}')
-    logging.info(f'Test labels shape: {test_target.shape}')
+    logger.info(f'Training data shape: {train_data.shape}')
+    logger.info(f'Validation data shape: {val_data.shape}')
+    logger.info(f'Test data shape: {test_data.shape}')
+    logger.info(f'Training labels shape: {train_target.shape}')
+    logger.info(f'Validation labels shape: {val_target.shape}')
+    logger.info(f'Test labels shape: {test_target.shape}')
 
     return None
 
@@ -108,6 +113,8 @@ def scale_data(
     :param test_data: pd.DataFrame, self-explanatory
     :return: Tuple[pd.DataFrame, ...], scaled dataframes
     """
+    logger.info('Normalising input data')
+
     cols = train_data.columns
 
     scaler = StandardScaler()

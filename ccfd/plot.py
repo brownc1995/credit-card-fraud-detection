@@ -6,9 +6,9 @@ import pandas as pd
 import seaborn as sns
 from sklearn.metrics import roc_curve
 
-from ccfd import *
-
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+FIGSIZE = (8, 7)
 
 
 def plot_pos_neg(

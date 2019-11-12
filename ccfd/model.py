@@ -8,9 +8,15 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import confusion_matrix
 
-from ccfd import *
+from ccfd import CLASS, STEPS_PER_EPOCH
 
 logger = logging.getLogger(__name__)
+
+LOG_DIR = 'doc/logs'
+
+BATCH_SIZE = 2048
+
+BUFFER_SIZE = 100000
 
 METRICS = [
     tf.keras.metrics.TruePositives(name='tp'),
@@ -72,8 +78,8 @@ def set_class_weights(
         1: weight_for_1
     }
 
-    logging.info(f'Weight for class 0: {weight_for_0:.2f}')
-    logging.info(f'Weight for class 1: {weight_for_1:.2f}')
+    logger.info(f'Weight for class 0: {weight_for_0:.2f}')
+    logger.info(f'Weight for class 1: {weight_for_1:.2f}')
 
     return class_weight
 
@@ -126,6 +132,23 @@ def build_model(
     return model
 
 
+def _log_fscore(
+        metric_values_map: dict
+) -> None:
+    """
+    Log f-score value
+    :param metric_values_map: dict, map of metric name to value
+    :return: None
+    """
+    precision = metric_values_map['precision']
+    recall = metric_values_map['recall']
+    fscore = 2 * precision * recall / (precision + recall)
+
+    logger.info(f'fscore: {fscore}')
+
+    return None
+
+
 def log_model_performance(
         model: tf.keras.Model,
         results: List[float],
@@ -142,18 +165,22 @@ def log_model_performance(
     """
     cm = confusion_matrix(labels, predictions > 0.5)
 
-    logging.info('==================================================================')
+    metric_values_map = dict(zip(model.metrics_names, results))
 
-    for name, value in zip(model.metrics_names, results):
-        logging.info(f'{name}: {value}')
+    logger.info('==================================================================')
 
-    logging.info(f'Legitimate Transactions Detected (True Negatives): {cm[0][0]}')
-    logging.info(f'Legitimate Transactions Incorrectly Detected (False Positives): {cm[0][1]}')
-    logging.info(f'Fraudulent Transactions Missed (False Negatives): {cm[1][0]}')
-    logging.info(f'Fraudulent Transactions Detected (True Positives): {cm[1][1]}')
-    logging.info(f'Total Fraudulent Transactions: {np.sum(cm[1])}')
+    for name, value in metric_values_map.items():
+        logger.info(f'{name}: {value}')
 
-    logging.info('==================================================================')
+    _log_fscore(metric_values_map)
+
+    logger.info(f'Legitimate Transactions Detected (True Negatives): {cm[0][0]}')
+    logger.info(f'Legitimate Transactions Incorrectly Detected (False Positives): {cm[0][1]}')
+    logger.info(f'Fraudulent Transactions Missed (False Negatives): {cm[1][0]}')
+    logger.info(f'Fraudulent Transactions Detected (True Positives): {cm[1][1]}')
+    logger.info(f'Total Fraudulent Transactions: {np.sum(cm[1])}')
+
+    logger.info('==================================================================')
 
     return None
 
@@ -201,11 +228,11 @@ def fit_model(
     assert not (resampled and class_weight is not None), 'Only one of resampled/class_weight should be True/not None.'
 
     if class_weight is not None:
-        logging.info('Training using class-weighted data')
+        logger.info('Training using class-weighted data')
     elif resampled:
-        logging.info('Training using resampled data')
+        logger.info('Training using resampled data')
     else:
-        logging.info('Training using vanilla data')
+        logger.info('Training using vanilla data')
 
     tensorboard_callback = _tensorboard_callback(class_weight, resampled)
 
@@ -239,9 +266,9 @@ def _make_dataset_pos_neg_helper(
 
 def make_datasets_pos_neg(
         pos_data: pd.DataFrame,
-        pos_target: pd.DataFrame,
+        pos_target: pd.Series,
         neg_data: pd.DataFrame,
-        neg_target: pd.DataFrame
+        neg_target: pd.Series
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
     """
     Dataset of poitive/negative transactions
@@ -267,6 +294,7 @@ def resample_dataset(
     :param neg_dataset: tf.data.Dataset, negative transaction dataset
     :return: tf.data.Dataset, resampled dataset
     """
+    logger.info('Resampling data')
     resampled_dataset = tf.data.experimental.sample_from_datasets([pos_dataset, neg_dataset], weights=[0.5, 0.5])
     resampled_dataset = resampled_dataset.batch(BATCH_SIZE).prefetch(2)
 
@@ -322,6 +350,8 @@ def make_all_datasets(
     :return: Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset], datasets for each of our training, validation,
     and test datasets.
     """
+    logger.info('Transforming data from pd.DataFrames to tf.data.Datasets')
+
     train_dataset = tf.data.Dataset.from_tensor_slices((train_data.values, train_target.values))
     train_dataset = train_dataset.shuffle(BUFFER_SIZE).repeat().batch(BATCH_SIZE)
 

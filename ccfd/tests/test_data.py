@@ -1,12 +1,16 @@
 import unittest
 
-from ccfd.data import *
+import pandas as pd
+
+from ccfd.data import get_data, train_val_test_split, scale_data, CLASS
+
+AMOUNT = 'amount'
 
 
 class TestData(unittest.TestCase):
     def setUp(self):
         self.data = get_data()
-        self.train_data, self.train_target, self.val_data, _, self.test_data, _ = train_val_test_split(self.data)
+        self.train_data, self.train_target, self.val_data, _, self.test_data, _ = train_val_test_split(self.data, 0.2)
         self.train_scaled, *_ = scale_data(self.train_data, self.val_data, self.test_data)
 
     def test_get_data(self):

@@ -1,6 +1,8 @@
 import unittest
 
-from ccfd.model import *
+import pandas as pd
+
+from ccfd.model import calc_initial_bias, set_class_weights, resample_steps_per_epoch
 
 
 class TestData(unittest.TestCase):

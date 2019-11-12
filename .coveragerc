@@ -1,4 +1,4 @@
 [run]
-omit = */__init__.py
-       */plot.py
-       */run.py
+omit = ccfd/__init__.py
+       ccfd/plot.py
+       ccfd/__main__.py
