@@ -100,6 +100,7 @@ The following are areas for further investigation:
 - simple anomaly detection model
 - random forest classifier
 - try and use `tf.data.Dataset` everywhere and never `pd.DataFrame` 
+- add __Results__ section to `README.md`
 
 
 ## References
