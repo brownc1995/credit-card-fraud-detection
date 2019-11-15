@@ -101,6 +101,7 @@ The following are areas for further investigation:
 - random forest classifier
 - try and use `tf.data.Dataset` everywhere and never `pd.DataFrame` 
 - add __Results__ section to `README.md`
+- build [TensorFlow Extended](https://www.tensorflow.org/tfx) pipeline
 
 
 ## References
