@@ -6,17 +6,17 @@ from typing import Tuple, Union, List
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.metrics import confusion_matrix
+from sklearn.ensemble import RandomForestClassifier as RFC
+from sklearn.linear_model import LogisticRegression as LR
+from sklearn.metrics import confusion_matrix, roc_auc_score, f1_score, recall_score, precision_score, accuracy_score
 
-from ccfd import CLASS, STEPS_PER_EPOCH
+from ccfd import CLASS, STEPS_PER_EPOCH, BATCH_SIZE
 
 logger = logging.getLogger(__name__)
 
 LOG_DIR = 'doc/logs'
 
-BATCH_SIZE = 2048
-
-BUFFER_SIZE = 100000
+RANDOM_FOREST_NUM_TREES = 10
 
 METRICS = [
     tf.keras.metrics.TruePositives(name='tp'),
@@ -144,7 +144,28 @@ def _log_fscore(
     recall = metric_values_map['recall']
     fscore = 2 * precision * recall / (precision + recall)
 
-    logger.info(f'fscore: {fscore}')
+    logger.info(f'f1_score: {fscore}')
+
+    return None
+
+
+def _log_confusion_matrix(
+        labels: Union[pd.Series, np.ndarray],
+        predictions: Union[pd.Series, np.ndarray]
+) -> None:
+    """
+    Log confusion matrix values
+    :param labels: Union[pd.Series, np.ndarray], series/array of labels
+    :param predictions: Union[pd.Series, np.ndarray], series/array of predicted outputs
+    :return: None
+    """
+    tn, fp, fn, tp = confusion_matrix(labels, predictions > 0.5).ravel()
+
+    logger.info(f'Legitimate Transactions Detected (True Negatives): {tn}')
+    logger.info(f'Legitimate Transactions Incorrectly Detected (False Positives): {fp}')
+    logger.info(f'Fraudulent Transactions Missed (False Negatives): {fn}')
+    logger.info(f'Fraudulent Transactions Detected (True Positives): {tp}')
+    logger.info(f'Total Fraudulent Transactions: {fn + tp}')
 
     return None
 
@@ -163,8 +184,6 @@ def log_model_performance(
     :param predictions: Union[pd.Series, np.ndarray], series/array of predicted outputs
     :return: None
     """
-    cm = confusion_matrix(labels, predictions > 0.5)
-
     metric_values_map = dict(zip(model.metrics_names, results))
 
     logger.info('==================================================================')
@@ -174,11 +193,7 @@ def log_model_performance(
 
     _log_fscore(metric_values_map)
 
-    logger.info(f'Legitimate Transactions Detected (True Negatives): {cm[0][0]}')
-    logger.info(f'Legitimate Transactions Incorrectly Detected (False Positives): {cm[0][1]}')
-    logger.info(f'Fraudulent Transactions Missed (False Negatives): {cm[1][0]}')
-    logger.info(f'Fraudulent Transactions Detected (True Positives): {cm[1][1]}')
-    logger.info(f'Total Fraudulent Transactions: {np.sum(cm[1])}')
+    _log_confusion_matrix(labels, predictions)
 
     logger.info('==================================================================')
 
@@ -248,59 +263,6 @@ def fit_model(
     return history
 
 
-def _make_dataset_pos_neg_helper(
-        data: pd.DataFrame,
-        target: pd.DataFrame
-) -> tf.data.Dataset:
-    """
-    Helper for making positive/negative transaction datasets
-    :param data: pd.DataFrame, features data
-    :param target: pd.DataFrame, target data
-    :return: tf.data.Dataset, resulting combined dataset
-    """
-    dataset = tf.data.Dataset.from_tensor_slices((data.values, target.values))
-    dataset = dataset.shuffle(BUFFER_SIZE).repeat()
-
-    return dataset
-
-
-def make_datasets_pos_neg(
-        pos_data: pd.DataFrame,
-        pos_target: pd.Series,
-        neg_data: pd.DataFrame,
-        neg_target: pd.Series
-) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
-    """
-    Dataset of poitive/negative transactions
-    :param pos_data: pd.DataFrame, positive transaction features
-    :param pos_target: pd.DataFrame, positive transaction target
-    :param neg_data: pd.DataFrame, negative transaction features
-    :param neg_target: pd.DataFrame, negative transaction target
-    :return: Tuple[tf.data.Dataset, tf.data.Dataset], dataset of poitive/negative transactions
-    """
-    pos_dataset = _make_dataset_pos_neg_helper(pos_data, pos_target)
-    neg_dataset = _make_dataset_pos_neg_helper(neg_data, neg_target)
-
-    return pos_dataset, neg_dataset
-
-
-def resample_dataset(
-        pos_dataset: tf.data.Dataset,
-        neg_dataset: tf.data.Dataset
-) -> tf.data.Dataset:
-    """
-    Resampled dataset of the positive/negative datasets so that they have equal weighting in the resulting dataset
-    :param pos_dataset: tf.data.Dataset, positive transaction dataset
-    :param neg_dataset: tf.data.Dataset, negative transaction dataset
-    :return: tf.data.Dataset, resampled dataset
-    """
-    logger.info('Resampling data')
-    resampled_dataset = tf.data.experimental.sample_from_datasets([pos_dataset, neg_dataset], weights=[0.5, 0.5])
-    resampled_dataset = resampled_dataset.batch(BATCH_SIZE).prefetch(2)
-
-    return resampled_dataset
-
-
 def resample_steps_per_epoch(
         df: pd.DataFrame
 ) -> int:
@@ -315,50 +277,70 @@ def resample_steps_per_epoch(
     return int(np.ceil(2 * neg / BATCH_SIZE))
 
 
-def _make_dataset_helper(
-        data: pd.DataFrame,
-        target: pd.DataFrame
-) -> tf.data.Dataset:
-    """
-    Helper for making datasets
-    :param data: pd.DataFrame, features dataframe
-    :param target: pd.DataFrame, target dataframe
-    :return: tf.data.Dataset, dataset of combined dataframes
-    """
-    dataset = tf.data.Dataset.from_tensor_slices((data.values, target.values))
-    dataset = dataset.shuffle(BUFFER_SIZE).repeat().batch(BATCH_SIZE)
+def _calc_sklearn_metrics(
+        test_target: pd.Series,
+        test_pred: pd.Series
+) -> dict:
+    tn, fp, fn, tp = confusion_matrix(test_target, test_pred).ravel()
 
-    return dataset
+    metrics_d = {
+        'tp': tp,
+        'fp': fp,
+        'tn': tn,
+        'fn': fn,
+        'accuracy': accuracy_score(test_target, test_pred),
+        'precision': precision_score(test_target, test_pred),
+        'recall': recall_score(test_target, test_pred),
+        'f1_score': f1_score(test_target, test_pred),
+        'auc': roc_auc_score(test_target, test_pred)
+    }
+
+    return metrics_d
 
 
-def make_all_datasets(
+def simple_model(
         train_data: pd.DataFrame,
-        train_target: pd.DataFrame,
-        val_data: pd.DataFrame,
-        val_target: pd.DataFrame,
+        train_target: pd.Series,
         test_data: pd.DataFrame,
-        test_target: pd.DataFrame
-) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
+        test_target: pd.Series,
+        model_type: str,
+        log: bool = True,
+        num_trees: int = None
+) -> dict:
     """
-    Make datasets for each of our training, validation, and test datasets.
-    :param train_data: pd.DataFrame, self-explanatory
-    :param train_target: pd.DataFrame, self-explanatory
-    :param val_data: pd.DataFrame, self-explanatory
-    :param val_target: pd.DataFrame, self-explanatory
-    :param test_data: pd.DataFrame, self-explanatory
-    :param test_target: pd.DataFrame, self-explanatory
-    :return: Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset], datasets for each of our training, validation,
-    and test datasets.
+    Run simple logistic regression model and return metrics
+    :param train_data: pd.DataFrame, training features
+    :param train_target: pd.DataFrame, training target variable
+    :param test_data: pd.DataFrame, test features
+    :param test_target: pd.DataFrame, test target variable
+    :param model_type: str,
+    :param log: bool, to log or not to log metrics
+    :param num_trees: int, number of trees to run random forest with
+    :return: dict, dictionary of metrics
     """
-    logger.info('Transforming data from pd.DataFrames to tf.data.Datasets')
+    exp_model_type = ['logistic_regression', 'random_forest']
+    assert model_type in exp_model_type, f'model_type must be in {exp_model_type}. It is currently {model_type}.'
 
-    train_dataset = tf.data.Dataset.from_tensor_slices((train_data.values, train_target.values))
-    train_dataset = train_dataset.shuffle(BUFFER_SIZE).repeat().batch(BATCH_SIZE)
+    if model_type == 'logistic_regression':
+        logger.info('Running simple logistic regression model')
+        clf = LR(solver='lbfgs')
+    else:
+        n_estimators = num_trees if num_trees is not None else RANDOM_FOREST_NUM_TREES
+        logger.info(f'Running random forest model with {n_estimators} tree(s).')
+        clf = RFC(n_estimators=n_estimators)
 
-    val_dataset = tf.data.Dataset.from_tensor_slices((val_data.values, val_target.values))
-    val_dataset = val_dataset.batch(BATCH_SIZE).prefetch(2)
+    clf.fit(train_data, train_target)
+    test_pred = clf.predict(test_data)
+    metrics_d = _calc_sklearn_metrics(test_target, test_pred)
 
-    test_dataset = tf.data.Dataset.from_tensor_slices((test_data.values, test_target.values))
-    test_dataset = test_dataset.batch(BATCH_SIZE)
+    if log:
+        logger.info('==================================================================')
 
-    return train_dataset, val_dataset, test_dataset
+        for name, value in metrics_d.items():
+            logger.info(f'{name}: {value}')
+
+        _log_confusion_matrix(test_target, test_pred)
+
+        logger.info('==================================================================')
+
+    return metrics_d

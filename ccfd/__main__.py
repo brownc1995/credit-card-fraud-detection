@@ -6,9 +6,10 @@ import pandas as pd
 import tensorflow as tf
 
 from ccfd import STEPS_PER_EPOCH
-from ccfd.data import get_data, scale_data, train_val_test_split, pos_neg_data
-from ccfd.model import calc_initial_bias, set_class_weights, make_all_datasets, resample_steps_per_epoch, \
-    resample_dataset, make_datasets_pos_neg, build_model, fit_model, log_model_performance
+from ccfd.data import get_data, scale_data, train_val_test_split, pos_neg_data, resample_dataset, make_datasets_pos_neg, \
+    make_all_datasets
+from ccfd.model import calc_initial_bias, set_class_weights, resample_steps_per_epoch, build_model, fit_model, \
+    log_model_performance, simple_model
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -71,6 +72,13 @@ def setup(
 
     resampled_dataset, resampled_steps_per_epoch = _prepare_resampled_data(train_data, train_target, ccfd_data)
 
+    dataframe_dict = {
+        'train_data': train_data,
+        'train_target': train_target,
+        'test_data': test_data,
+        'test_target': test_target
+    }
+
     nn_kwargs = {
         'initial_bias': initial_bias,
         'input_shape': input_shape,
@@ -81,7 +89,7 @@ def setup(
         'epochs': epochs
     }
 
-    return class_weight, resampled_dataset, resampled_steps_per_epoch, nn_kwargs
+    return class_weight, resampled_dataset, resampled_steps_per_epoch, dataframe_dict, nn_kwargs
 
 
 def run_network(
@@ -150,7 +158,12 @@ def main(
     :param epochs: int, number of epochs to run over
     :return: None
     """
-    class_weight, resampled_dataset, resampled_steps_per_epoch, nn_kwargs = setup(epochs)
+    class_weight, resampled_dataset, resampled_steps_per_epoch, simple_model_dfs, nn_kwargs = setup(epochs)
+
+    simple_model(**simple_model_dfs, model_type='logistic_regression')
+
+    for num_trees in [1, 10, 100]:
+        simple_model(**simple_model_dfs, model_type='random_forest', num_trees=num_trees)
 
     run_network(model_type='vanilla', **nn_kwargs)
 

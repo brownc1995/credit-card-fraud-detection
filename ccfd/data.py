@@ -3,14 +3,17 @@ from typing import Tuple, Sequence
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from ccfd import CLASS
+from ccfd import CLASS, BATCH_SIZE
 
 logger = logging.getLogger(__name__)
 
 CCFD_DATA_PATH = 'doc/data/creditcard'
+
+BUFFER_SIZE = 100000
 
 
 def get_data(
@@ -145,3 +148,136 @@ def pos_neg_data(
     neg_target = train_target[~bool_train_target]
 
     return pos_data, pos_target, neg_data, neg_target
+
+
+def resample_dataframe(
+        pos_data: pd.DataFrame,
+        pos_target: pd.DataFrame,
+        neg_data: pd.DataFrame,
+        neg_target: pd.DataFrame
+) -> Tuple[pd.DataFrame, pd.Series]:
+    """
+    Resample dataframe and return as dataframe
+    :param pos_data: pd.DataFrame, positive features
+    :param pos_target: pd.DataFrame, positive target
+    :param neg_data: pd.DataFrame, negative features
+    :param neg_target: pd.DataFrame, negative target
+    :return: Tuple[pd.DataFrame, pd.Series], resampled training features and target
+    """
+    ids = np.arange(len(pos_data))
+    choices = np.random.choice(ids, len(neg_data))
+
+    res_pos_data = pos_data[choices]
+    res_pos_target = pos_target[choices]
+
+    resampled_data = np.concatenate([res_pos_data, neg_data], axis=0)
+    resampled_target = np.concatenate([res_pos_target, neg_target], axis=0)
+
+    order = np.arange(len(resampled_target))
+    np.random.shuffle(order)
+    resampled_data = resampled_data[order]
+    resampled_target = resampled_target[order]
+
+    return resampled_data, resampled_target
+
+
+def resample_dataset(
+        pos_dataset: tf.data.Dataset,
+        neg_dataset: tf.data.Dataset
+) -> tf.data.Dataset:
+    """
+    Resampled dataset of the positive/negative datasets so that they have equal weighting in the resulting dataset
+    :param pos_dataset: tf.data.Dataset, positive transaction dataset
+    :param neg_dataset: tf.data.Dataset, negative transaction dataset
+    :return: tf.data.Dataset, resampled dataset
+    """
+    logger.info('Resampling data')
+    resampled_dataset = tf.data.experimental.sample_from_datasets([pos_dataset, neg_dataset], weights=[0.5, 0.5])
+    resampled_dataset = resampled_dataset.batch(BATCH_SIZE).prefetch(2)
+
+    return resampled_dataset
+
+
+def _make_dataset_helper(
+        data: pd.DataFrame,
+        target: pd.DataFrame
+) -> tf.data.Dataset:
+    """
+    Helper for making datasets
+    :param data: pd.DataFrame, features dataframe
+    :param target: pd.DataFrame, target dataframe
+    :return: tf.data.Dataset, dataset of combined dataframes
+    """
+    dataset = tf.data.Dataset.from_tensor_slices((data.values, target.values))
+    dataset = dataset.shuffle(BUFFER_SIZE).repeat().batch(BATCH_SIZE)
+
+    return dataset
+
+
+def make_all_datasets(
+        train_data: pd.DataFrame,
+        train_target: pd.DataFrame,
+        val_data: pd.DataFrame,
+        val_target: pd.DataFrame,
+        test_data: pd.DataFrame,
+        test_target: pd.DataFrame
+) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
+    """
+    Make datasets for each of our training, validation, and test datasets.
+    :param train_data: pd.DataFrame, self-explanatory
+    :param train_target: pd.DataFrame, self-explanatory
+    :param val_data: pd.DataFrame, self-explanatory
+    :param val_target: pd.DataFrame, self-explanatory
+    :param test_data: pd.DataFrame, self-explanatory
+    :param test_target: pd.DataFrame, self-explanatory
+    :return: Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset], datasets for each of our training, validation,
+    and test datasets.
+    """
+    logger.info('Transforming data from pd.DataFrames to tf.data.Datasets')
+
+    train_dataset = tf.data.Dataset.from_tensor_slices((train_data.values, train_target.values))
+    train_dataset = train_dataset.shuffle(BUFFER_SIZE).repeat().batch(BATCH_SIZE)
+
+    val_dataset = tf.data.Dataset.from_tensor_slices((val_data.values, val_target.values))
+    val_dataset = val_dataset.batch(BATCH_SIZE).prefetch(2)
+
+    test_dataset = tf.data.Dataset.from_tensor_slices((test_data.values, test_target.values))
+    test_dataset = test_dataset.batch(BATCH_SIZE)
+
+    return train_dataset, val_dataset, test_dataset
+
+
+def _make_dataset_pos_neg_helper(
+        data: pd.DataFrame,
+        target: pd.DataFrame
+) -> tf.data.Dataset:
+    """
+    Helper for making positive/negative transaction datasets
+    :param data: pd.DataFrame, features data
+    :param target: pd.DataFrame, target data
+    :return: tf.data.Dataset, resulting combined dataset
+    """
+    dataset = tf.data.Dataset.from_tensor_slices((data.values, target.values))
+    dataset = dataset.shuffle(BUFFER_SIZE).repeat()
+
+    return dataset
+
+
+def make_datasets_pos_neg(
+        pos_data: pd.DataFrame,
+        pos_target: pd.Series,
+        neg_data: pd.DataFrame,
+        neg_target: pd.Series
+) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
+    """
+    Dataset of poitive/negative transactions
+    :param pos_data: pd.DataFrame, positive transaction features
+    :param pos_target: pd.DataFrame, positive transaction target
+    :param neg_data: pd.DataFrame, negative transaction features
+    :param neg_target: pd.DataFrame, negative transaction target
+    :return: Tuple[tf.data.Dataset, tf.data.Dataset], dataset of poitive/negative transactions
+    """
+    pos_dataset = _make_dataset_pos_neg_helper(pos_data, pos_target)
+    neg_dataset = _make_dataset_pos_neg_helper(neg_data, neg_target)
+
+    return pos_dataset, neg_dataset

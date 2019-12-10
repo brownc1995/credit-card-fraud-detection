@@ -21,12 +21,17 @@ You can run the following line to start some experiments:
 python -m ccfd --epochs=25
 ```
 You can view the fitting history in [logs](doc/logs) and display them 
-using TensorBoard. The above will run the 
-- vanilla;
-- class-weighted, and;
-- oversampled
+using TensorBoard. 
 
-neural network experiments and save the history in [logs](doc/logs). 
+The above command will run the
+- simple logistic regression;
+- random forest classifiers; 
+- vanilla neural network;
+- class-weighted neural network, and;
+- oversampled neural network
+
+experiments and save the history of the neural networks in 
+[logs](doc/logs). 
 
 The class-weighted neural network maps 
 class indices (integers) to a weight (float) value, used for 
@@ -54,6 +59,22 @@ experiments perform:
 ```shell script
 tensorboard --logdir doc/logs
 ``` 
+
+## Results
+Below are some results from each of the models stated above. The 
+three neural networks were each trained for 25 epochs. The 
+integers in parentheses denote the number of trees in each
+forest.
+
+| Model                  | accuracy | auc     | f-score |
+| ---                    | ---      | ---     | ---     |
+| Logistic Regression    | 0.99917  | 0.83840 | 0.73446 |
+| Random Forest (1)      | 0.99912  | 0.85917 | 0.73404 |
+| Random Forest (10)     | 0.99954  | 0.89058 | 0.85227 |
+| Random Forest (100)    | 0.99954  | 0.90618 | 0.85714 |
+| vanilla network        | 0.99853  | 0.90723 | 0.45455 |
+| class-weighted network | 0.99837  | 0.90723 | 0.30075 |
+| oversampled network    | 0.99851  | 0.90723 | 0.42953 |
 
 
 ## Context
@@ -96,12 +117,8 @@ classification.
 
 
 ## Further work
-The following are areas for further investigation:
-- simple anomaly detection model
-- random forest classifier
-- try and use `tf.data.Dataset` everywhere and never `pd.DataFrame` 
-- add __Results__ section to `README.md`
-- build [TensorFlow Extended](https://www.tensorflow.org/tfx) pipeline
+The following are to-dos/areas for further investigation:
+- try and use `tf.data.Dataset` everywhere and never `pd.DataFrame`
 
 
 ## References
