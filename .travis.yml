@@ -10,7 +10,7 @@ install:
   - pip install codecov==2.0.15 pytest-cov==2.8.1 pytest==5.2.2
 
 script:
-  - pytest --cov=.
+  - pytest --cov=. --cov-report term-missing
 
 after_success:
   - codecov

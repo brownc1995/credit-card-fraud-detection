@@ -83,7 +83,7 @@ def log_shapes(
         val_target: pd.DataFrame,
         test_data: pd.DataFrame,
         test_target: pd.DataFrame,
-) -> None:
+) -> None:  # pragma: no cover
     """
     Log shapes of dataframes
     :param train_data: pd.DataFrame, self-explanatory
@@ -128,6 +128,7 @@ def scale_data(
     return train_data, val_data, test_data
 
 
+# TODO: write test
 def pos_neg_data(
         train_data: pd.DataFrame,
         train_target: pd.DataFrame
@@ -150,6 +151,7 @@ def pos_neg_data(
     return pos_data, pos_target, neg_data, neg_target
 
 
+# TODO: write test
 def resample_dataframe(
         pos_data: pd.DataFrame,
         pos_target: pd.DataFrame,
@@ -181,6 +183,7 @@ def resample_dataframe(
     return resampled_data, resampled_target
 
 
+# TODO: write test
 def resample_dataset(
         pos_dataset: tf.data.Dataset,
         neg_dataset: tf.data.Dataset
@@ -201,7 +204,7 @@ def resample_dataset(
 def _make_dataset_helper(
         data: pd.DataFrame,
         target: pd.DataFrame
-) -> tf.data.Dataset:
+) -> tf.data.Dataset:  # pragma: no cover
     """
     Helper for making datasets
     :param data: pd.DataFrame, features dataframe
@@ -214,6 +217,7 @@ def _make_dataset_helper(
     return dataset
 
 
+# TODO: write test
 def make_all_datasets(
         train_data: pd.DataFrame,
         train_target: pd.DataFrame,
@@ -249,8 +253,8 @@ def make_all_datasets(
 
 def _make_dataset_pos_neg_helper(
         data: pd.DataFrame,
-        target: pd.DataFrame
-) -> tf.data.Dataset:
+        target: pd.Series
+) -> tf.data.Dataset:  # pragma: no cover
     """
     Helper for making positive/negative transaction datasets
     :param data: pd.DataFrame, features data
@@ -263,6 +267,7 @@ def _make_dataset_pos_neg_helper(
     return dataset
 
 
+# TODO: write test
 def make_datasets_pos_neg(
         pos_data: pd.DataFrame,
         pos_target: pd.Series,

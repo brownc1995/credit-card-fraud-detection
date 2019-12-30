@@ -8,6 +8,8 @@ AMOUNT = 'amount'
 
 
 class TestData(unittest.TestCase):
+    DELTA = 0.001
+
     def setUp(self):
         self.data = get_data()
         self.train_data, self.train_target, self.val_data, _, self.test_data, _ = train_val_test_split(self.data, 0.2)
@@ -26,7 +28,7 @@ class TestData(unittest.TestCase):
 
     def test_scale_data(self):
         self.assertIsInstance(self.train_scaled, pd.DataFrame)
-        self.assertAlmostEqual(self.train_scaled[AMOUNT].mean(), 0, delta=0.001)
-        self.assertAlmostEqual(self.train_scaled[AMOUNT].std(), 1, delta=0.001)
-        self.assertAlmostEqual(self.train_scaled['v4'].mean(), 0, delta=0.001)
-        self.assertAlmostEqual(self.train_scaled['v4'].std(), 1, delta=0.001)
+        self.assertAlmostEqual(self.train_scaled[AMOUNT].mean(), 0, delta=self.DELTA)
+        self.assertAlmostEqual(self.train_scaled[AMOUNT].std(), 1, delta=self.DELTA)
+        self.assertAlmostEqual(self.train_scaled['v4'].mean(), 0, delta=self.DELTA)
+        self.assertAlmostEqual(self.train_scaled['v4'].std(), 1, delta=self.DELTA)
