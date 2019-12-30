@@ -2,3 +2,4 @@
 omit = ccfd/__init__.py
        ccfd/plot.py
        ccfd/__main__.py
+       ccfd/tests/*
