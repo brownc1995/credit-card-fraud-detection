@@ -118,9 +118,10 @@ classification.
 
 ## Further work
 The following are to-dos/areas for further investigation:
-- try and use `tf.data.Dataset` everywhere and never `pd.DataFrame`
+- try and use `tf.data.Dataset` almost everywhere and never `pd.DataFrame`
 - build `tf.Extended` pipeline (see [here](https://www.tensorflow.org/tfx))
 - train networks for many more epochs
+- write more tests for [data.py](ccfd/data.py) (see TODOs)
 
 
 ## References
