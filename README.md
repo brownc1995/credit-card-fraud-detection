@@ -122,6 +122,7 @@ The following are to-dos/areas for further investigation:
 - build `tf.Extended` pipeline (see [here](https://www.tensorflow.org/tfx))
 - train networks for many more epochs
 - write more tests for [data.py](ccfd/data.py) (see TODOs)
+- output results to file rather than just to terminal
 
 
 ## References
